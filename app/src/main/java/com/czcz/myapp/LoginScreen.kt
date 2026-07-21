@@ -1,244 +1,180 @@
 package com.czcz.myapp
 
-import android.view.View
-import androidx.compose.animation.animateColorAsState
+import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit = {},
-    navController: NavController
-) {
-    val viewModel: AppViewModel = viewModel()
+fun LoginScreen(navController: NavController) {
+    val skyBlue = Color(0xFF87CEEB)
+    val skyBlueDark = Color(0xFF5BB0D9)
+    val viewModel = remember { ViewModel() }
+    val context = LocalContext.current
+
     val account by viewModel.account.collectAsState()
     val password by viewModel.password.collectAsState()
-    val passwordVisible by viewModel.passwordVisible.collectAsState()
-    var isLoading by remember { mutableStateOf(false) }
-    val focusManager = LocalFocusManager.current
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+    val loginSuccess by viewModel.loginSuccess.collectAsState()
 
-    val isAccountValid = account.length >= 4
-    val isPasswordValid = password.length >= 6
-    val canLogin = isAccountValid && isPasswordValid && !isLoading
+    var autoLogin by remember { mutableStateOf(false) }
+
+    LaunchedEffect(errorMessage) {
+        if (errorMessage.isNotEmpty()) {
+            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
+            navController.navigate("FlashScreen")
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(skyBlue)
             .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(32.dp))
-
-        AppLogo()
-
-        Spacer(Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(120.dp))
 
         Text(
-            text = "欢迎回来",
-            style = MaterialTheme.typography.headlineMedium,
+            text = "欢迎登录",
+            fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "登录你的账号，继续探索精彩内容",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White
         )
 
-        Spacer(Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
         OutlinedTextField(
             value = account,
             onValueChange = { viewModel.setAccount(it) },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("账号 / 邮箱") },
-            leadingIcon = {
-                Icon(Icons.Default.Email, contentDescription = null)
-            },
+            label = { Text("账户") },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email,
-                imeAction = ImeAction.Next,
-            ),
-            keyboardActions = KeyboardActions(
-                onNext = { focusManager.moveFocus(FocusDirection.Down) },
-            ),
+            enabled = !isLoading,
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.White,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.6f),
+                focusedLabelColor = Color.White,
+                unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
+                cursorColor = Color.White,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            )
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = password,
             onValueChange = { viewModel.setPassword(it) },
-            modifier = Modifier.fillMaxWidth(),
             label = { Text("密码") },
-            leadingIcon = {
-                Icon(Icons.Default.Lock, contentDescription = null)
-            },
-            trailingIcon = {
-                IconButton(onClick = { viewModel.setPasswordVisible(!passwordVisible) }) {
-                    Icon(
-                        imageVector = if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
-                    )
-                }
-            },
             singleLine = true,
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    focusManager.clearFocus()
-                    if (canLogin) {
-                        isLoading = true
-                        onLoginSuccess()
-                    }
-                },
-            ),
+            enabled = !isLoading,
+            visualTransformation = PasswordVisualTransformation(),
+            modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.White,
+                unfocusedBorderColor = Color.White.copy(alpha = 0.6f),
+                focusedLabelColor = Color.White,
+                unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
+                cursorColor = Color.White,
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White
+            )
         )
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "还没有账号？",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Checkbox(
+                checked = autoLogin,
+                onCheckedChange = { autoLogin = it },
+                colors = CheckboxDefaults.colors(
+                    checkedColor = Color.White,
+                    uncheckedColor = Color.White.copy(alpha = 0.7f),
+                    checkmarkColor = skyBlue
+                )
             )
-            Spacer(Modifier.width(4.dp))
             Text(
-                text = "立即注册",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { navController.navigate("RegistrationScreen") },
+                text = "自动登录",
+                color = Color.White,
+                fontSize = 14.sp
             )
         }
 
-        Spacer(Modifier.height(24.dp))
-
-        val buttonColor by animateColorAsState(
-            targetValue = if (canLogin) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.surfaceVariant,
-            label = "loginButtonColor",
-        )
-        val buttonTextColor by animateColorAsState(
-            targetValue = if (canLogin) MaterialTheme.colorScheme.onPrimary
-            else MaterialTheme.colorScheme.onSurfaceVariant,
-            label = "loginButtonTextColor",
-        )
+        Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = {
-                focusManager.clearFocus()
-                if (canLogin) {
-                    isLoading = true
-                    onLoginSuccess()
-                }
-            },
+            onClick = { viewModel.login() },
+            enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(52.dp),
-            enabled = canLogin,
+                .height(50.dp),
             shape = RoundedCornerShape(12.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = buttonColor,
-                contentColor = buttonTextColor,
-                disabledContainerColor = buttonColor,
-                disabledContentColor = buttonTextColor,
-            ),
-        ) {
-            Text(
-                text = if (isLoading) "登录中..." else "登 录",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
+                containerColor = Color.White,
+                contentColor = skyBlueDark,
+                disabledContainerColor = Color.White.copy(alpha = 0.6f),
+                disabledContentColor = skyBlueDark.copy(alpha = 0.6f)
             )
+        ) {
+            if (isLoading) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = skyBlueDark,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "登录中...",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            } else {
+                Text(
+                    text = "登录",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
-        Spacer(Modifier.weight(1f))
-    }
-}
+        Spacer(modifier = Modifier.height(20.dp))
 
-@Composable
-private fun AppLogo() {
-    Box(
-        modifier = Modifier
-            .size(88.dp)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.primary),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            Icons.Default.Person,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.onPrimary,
-        )
+        TextButton(onClick = { navController.navigate("RegisterScreen") }) {
+            Text(
+                text = "没有账号？去注册",
+                color = Color.White,
+                fontSize = 14.sp
+            )
+        }
     }
 }

@@ -27,17 +27,14 @@ class MainActivity : ComponentActivity() {
 fun Main() {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = "LoginScreen"){
-        composable("FlashScreen") {
-            FlashScreen()
-        }
         composable("LoginScreen"){
-            LoginScreen({},navController)
+            LoginScreen(navController)
         }
-        composable("RegistrationScreen"){
-            RegistrationScreen(navController = navController)
+        composable("RegisterScreen"){
+            RegistrationScreen(navController)
         }
-        composable("MineScreen"){
-            MineScreen()
+        composable("FlashScreen"){
+            FlashScreen(navController)
         }
     }
 }
