@@ -11,8 +11,10 @@ interface ApiService {
     fun health(): Call<HealthResponse>
 
     @POST("api/auth/register")
-    fun register(@Body request: RegisterRequest): Call<ApiResponse<RegisterData>>
+    fun register(@Body request: RegisterRequest): Call<ApiResponse<CallBackData>>
 
     @POST("api/auth/login")
-    fun login(@Body request: LoginRequest): Call<ApiResponse<RegisterData>>
+    fun login(@Body request: LoginRequest): Call<ApiResponse<CallBackData>>
+    @POST("api/auth/me")
+    fun autologin(@Body token: AutoLoginRequest): Call<ApiResponse<CallBackData>>
 }

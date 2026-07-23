@@ -36,5 +36,11 @@ fun Main() {
         composable("FlashScreen"){
             FlashScreen(navController)
         }
+        composable("MineScreen"){
+            MineScreen(navController)
+        }
+        composable("HomeScreen"){
+            HomeScreen(navController)
+        }
     }
 }

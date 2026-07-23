@@ -34,17 +34,18 @@ fun FlashScreen(navController: NavController) {
     var searchQuery by remember { mutableStateOf("") }
 
     val feedItems = remember {
+        val mockUser = User(username = "小明", account = "xiaoming", password = "", joinTime = "2024-01-01", followers = 1200, likes = 3600)
         listOf(
-            FeedItem("1", "https://picsum.photos/400/600", "今日份的好心情", 128),
-            FeedItem("2", "https://picsum.photos/400/500", "分享我的穿搭日常", 256),
-            FeedItem("3", "https://picsum.photos/400/700", "周末探店打卡", 89),
-            FeedItem("4", "https://picsum.photos/400/450", "日落时分的城市", 342),
-            FeedItem("5", "https://picsum.photos/400/550", "居家好物推荐", 67),
-            FeedItem("6", "https://picsum.photos/400/650", "美食制作教程", 512),
-            FeedItem("7", "https://picsum.photos/400/480", "旅行日记·大理", 198),
-            FeedItem("8", "https://picsum.photos/400/620", "读书笔记分享", 76),
-            FeedItem("9", "https://picsum.photos/400/530", "健身打卡第30天", 421),
-            FeedItem("10", "https://picsum.photos/400/580", "手账排版灵感", 153),
+            Post("1", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), mockUser, 128),
+            Post("2", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), mockUser, 256),
+            Post("3", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), mockUser, 89),
+            Post("4", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), mockUser, 342),
+            Post("5", Media(MediaType.IMAGE, "https://picsum.photos/400/550"), mockUser, 67),
+            Post("6", Media(MediaType.IMAGE, "https://picsum.photos/400/650"), mockUser, 512),
+            Post("7", Media(MediaType.IMAGE, "https://picsum.photos/400/480"), mockUser, 198),
+            Post("8", Media(MediaType.IMAGE, "https://picsum.photos/400/620"), mockUser, 76),
+            Post("9", Media(MediaType.IMAGE, "https://picsum.photos/400/530"), mockUser, 421),
+            Post("10", Media(MediaType.IMAGE, "https://picsum.photos/400/580"), mockUser, 153),
         )
     }
 
@@ -95,68 +96,6 @@ fun FlashScreen(navController: NavController) {
                     )
                 }
             }
-        },
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color.White,
-                tonalElevation = 8.dp
-            ) {
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Home, contentDescription = "首页") },
-                    label = { Text("首页") },
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = skyBlueDark,
-                        selectedTextColor = skyBlueDark,
-                        indicatorColor = skyBlue.copy(alpha = 0.2f)
-                    )
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Explore, contentDescription = "发现") },
-                    label = { Text("发现") },
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = skyBlueDark,
-                        selectedTextColor = skyBlueDark,
-                        indicatorColor = skyBlue.copy(alpha = 0.2f)
-                    )
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.AddCircle, contentDescription = "发布") },
-                    label = { Text("发布") },
-                    selected = selectedTab == 2,
-                    onClick = { selectedTab = 2 },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = skyBlueDark,
-                        selectedTextColor = skyBlueDark,
-                        indicatorColor = skyBlue.copy(alpha = 0.2f)
-                    )
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Notifications, contentDescription = "消息") },
-                    label = { Text("消息") },
-                    selected = selectedTab == 3,
-                    onClick = { selectedTab = 3 },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = skyBlueDark,
-                        selectedTextColor = skyBlueDark,
-                        indicatorColor = skyBlue.copy(alpha = 0.2f)
-                    )
-                )
-                NavigationBarItem(
-                    icon = { Icon(Icons.Filled.Person, contentDescription = "我的") },
-                    label = { Text("我的") },
-                    selected = selectedTab == 4,
-                    onClick = { selectedTab = 4 },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = skyBlueDark,
-                        selectedTextColor = skyBlueDark,
-                        indicatorColor = skyBlue.copy(alpha = 0.2f)
-                    )
-                )
-            }
         }
     ) { paddingValues ->
         LazyVerticalStaggeredGrid(
@@ -172,30 +111,30 @@ fun FlashScreen(navController: NavController) {
             modifier = Modifier.fillMaxSize()
         ) {
             items(feedItems, key = { it.id }) { item ->
-                FeedItemCard(item)
+                PostCard(item, navController)
             }
         }
     }
 }
 
 @Composable
-fun FeedItemCard(item: FeedItem) {
+fun PostCard(item: Post, navController: NavController) {
     val skyBlueDark = Color(0xFF5BB0D9)
-    var isLiked by remember { mutableStateOf(item.isLiked) }
-    var likeCount by remember { mutableIntStateOf(item.likeCount) }
+    var isLiked by remember { mutableStateOf(false) }
+    var likeCount by remember { mutableIntStateOf(item.likes) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { },
+            .clickable { navController.navigate("PostDetailScreen/${item.id}") },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
             AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.title,
+                model = item.media.url,
+                contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -214,14 +153,28 @@ fun FeedItemCard(item: FeedItem) {
             Column(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
             ) {
-                Text(
-                    text = item.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    color = Color(0xFF333333)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    AsyncImage(
+                        model = "https://picsum.photos/100/100",
+                        contentDescription = "头像",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(22.dp)
+                            .clip(CircleShape)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = item.sender.username ?: item.sender.account,
+                        fontSize = 12.sp,
+                        color = Color(0xFF666666),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically

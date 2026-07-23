@@ -15,6 +15,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import kotlinx.coroutines.flow.first
+import com.czcz.myapp.DataStorePreference.getAutoLogin
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -29,7 +31,15 @@ fun LoginScreen(navController: NavController) {
     val errorMessage by viewModel.errorMessage.collectAsState()
     val loginSuccess by viewModel.loginSuccess.collectAsState()
 
-    var autoLogin by remember { mutableStateOf(false) }
+    val autoLogin by viewModel.autoLogin.collectAsState()
+
+    LaunchedEffect(autoLogin) {
+        val isAutoLogin = getAutoLogin(context).first()
+        viewModel.setAutoLogin(isAutoLogin)
+        if (autoLogin) {
+            viewModel.autoLogin(context)
+        }
+    }
 
     LaunchedEffect(errorMessage) {
         if (errorMessage.isNotEmpty()) {
@@ -40,7 +50,7 @@ fun LoginScreen(navController: NavController) {
     LaunchedEffect(loginSuccess) {
         if (loginSuccess) {
             Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
-            navController.navigate("FlashScreen")
+            navController.navigate("HomeScreen")
         }
     }
 
@@ -111,7 +121,7 @@ fun LoginScreen(navController: NavController) {
         ) {
             Checkbox(
                 checked = autoLogin,
-                onCheckedChange = { autoLogin = it },
+                onCheckedChange = { viewModel.setAutoLogin(!autoLogin) },
                 colors = CheckboxDefaults.colors(
                     checkedColor = Color.White,
                     uncheckedColor = Color.White.copy(alpha = 0.7f),
@@ -128,7 +138,9 @@ fun LoginScreen(navController: NavController) {
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = { viewModel.login() },
+            onClick = {
+                viewModel.login(context)
+                      },
             enabled = !isLoading,
             modifier = Modifier
                 .fillMaxWidth()

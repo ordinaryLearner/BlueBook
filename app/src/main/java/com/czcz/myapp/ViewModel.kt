@@ -1,7 +1,13 @@
 package com.czcz.myapp
 
+import android.content.Context
+import com.czcz.myapp.DataStorePreference.saveUserInfo
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
@@ -26,6 +32,8 @@ class ViewModel {
 
     private val _loginSuccess = MutableStateFlow(false)
     val loginSuccess: StateFlow<Boolean> = _loginSuccess
+    private val _autoLogin = MutableStateFlow(false)
+    val autoLogin: StateFlow<Boolean> = _autoLogin
 
     fun setAccount(value: String) {
         _account.value = value
@@ -35,6 +43,9 @@ class ViewModel {
     }
     fun setPassword(value: String) {
         _password.value = value
+    }
+    fun setAutoLogin(value: Boolean) {
+        _autoLogin.value = value
     }
 
     object ApiClient {
@@ -65,10 +76,10 @@ class ViewModel {
         _errorMessage.value = ""
         _isLoading.value = true
         val call = ApiClient.apiService.register(RegisterRequest(account.value, password.value))
-        call.enqueue(object : Callback<ApiResponse<RegisterData>> {
+        call.enqueue(object : Callback<ApiResponse<CallBackData>> {
             override fun onResponse(
-                call: Call<ApiResponse<RegisterData>>,
-                response: Response<ApiResponse<RegisterData>>
+                call: Call<ApiResponse<CallBackData>>,
+                response: Response<ApiResponse<CallBackData>>
             ) {
                 _isLoading.value = false
                 if (response.isSuccessful) {
@@ -83,14 +94,21 @@ class ViewModel {
                 }
             }
 
-            override fun onFailure(call: Call<ApiResponse<RegisterData>>, t: Throwable) {
+            override fun onFailure(call: Call<ApiResponse<CallBackData>>, t: Throwable) {
                 _isLoading.value = false
                 _errorMessage.value = "网络错误：${t.message}"
             }
         })
     }
 
-    fun login() {
+    fun login(context: Context) {
+        val isAutoLogin = MutableStateFlow(false)
+        CoroutineScope(Dispatchers.IO).launch {
+            isAutoLogin.value = DataStorePreference.getAutoLogin(context).first()
+        }
+        if (isAutoLogin.value){
+            autoLogin(context)
+        }
         if (account.value.isBlank()) {
             _errorMessage.value = "账号不能为空"
             return
@@ -102,16 +120,18 @@ class ViewModel {
         _errorMessage.value = ""
         _isLoading.value = true
         val call = ApiClient.apiService.login(LoginRequest(account.value, password.value))
-        call.enqueue(object : Callback<ApiResponse<RegisterData>> {
+
+        call.enqueue(object : Callback<ApiResponse<CallBackData>> {
             override fun onResponse(
-                call: Call<ApiResponse<RegisterData>>,
-                response: Response<ApiResponse<RegisterData>>
+                call: Call<ApiResponse<CallBackData>>,
+                response: Response<ApiResponse<CallBackData>>
             ) {
                 _isLoading.value = false
                 if (response.isSuccessful) {
                     val body = response.body()
                     if (body != null && body.code == 200) {
                         _loginSuccess.value = true
+                        CoroutineScope(Dispatchers.IO).launch{ saveUserInfo(body.data?.token ?: "", context, _autoLogin.value) }
                     } else {
                         _errorMessage.value = body?.message ?: "登录失败"
                     }
@@ -120,10 +140,41 @@ class ViewModel {
                 }
             }
 
-            override fun onFailure(call: Call<ApiResponse<RegisterData>>, t: Throwable) {
+            override fun onFailure(call: Call<ApiResponse<CallBackData>>, t: Throwable) {
                 _isLoading.value = false
                 _errorMessage.value = "网络错误：${t.message}"
             }
         })
     }
+    fun autoLogin(context: Context) {
+        _isLoading.value = true
+        CoroutineScope(Dispatchers.IO).launch {
+            val token = DataStorePreference.getToken(context).first()
+            val call = ApiClient.apiService.autologin(AutoLoginRequest(_account.value, token))
+            call.enqueue(object : Callback<ApiResponse<CallBackData>> {
+                override fun onResponse(
+                    call: Call<ApiResponse<CallBackData>>,
+                    response: Response<ApiResponse<CallBackData>>
+                ) {
+                    _isLoading.value = false
+                    if (response.isSuccessful) {
+
+                        val body = response.body()
+                        if (body != null && body.code == 200) {
+                            _loginSuccess.value = true
+                        } else {
+                            _errorMessage.value = body?.message ?: "登录失败"
+                        }
+                    } else {
+                        _errorMessage.value = "登录失败，服务器错误(${response.code()})"
+                    }
+                }
+                override fun onFailure(call: Call<ApiResponse<CallBackData>>, t: Throwable) {
+                    _isLoading.value = false
+                    _errorMessage.value = "网络错误：${t.message}"
+                }
+            })
+        }
+    }
+
 }
