@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import kotlinx.coroutines.flow.first
 import com.czcz.myapp.DataStorePreference.getAutoLogin
@@ -22,7 +23,7 @@ import com.czcz.myapp.DataStorePreference.getAutoLogin
 fun LoginScreen(navController: NavController) {
     val skyBlue = Color(0xFF87CEEB)
     val skyBlueDark = Color(0xFF5BB0D9)
-    val viewModel = remember { ViewModel() }
+    val viewModel: ViewModel = viewModel()
     val context = LocalContext.current
 
     val account by viewModel.account.collectAsState()
@@ -33,12 +34,8 @@ fun LoginScreen(navController: NavController) {
 
     val autoLogin by viewModel.autoLogin.collectAsState()
 
-    LaunchedEffect(autoLogin) {
-        val isAutoLogin = getAutoLogin(context).first()
-        viewModel.setAutoLogin(isAutoLogin)
-        if (autoLogin) {
-            viewModel.autoLogin(context)
-        }
+    LaunchedEffect(null) {
+        viewModel.autoLogin(context)
     }
 
     LaunchedEffect(errorMessage) {

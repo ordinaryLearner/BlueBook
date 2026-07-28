@@ -1,6 +1,10 @@
 package com.czcz.myapp
 
 import android.content.Context
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.czcz.myapp.DataStorePreference.saveUserInfo
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +18,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.Callback
 
-class ViewModel {
+class ViewModel : androidx.lifecycle.ViewModel() {
     private val _account = MutableStateFlow("")
     val account: StateFlow<String> = _account
     private val _confirmPassword = MutableStateFlow("")
@@ -34,6 +38,12 @@ class ViewModel {
     val loginSuccess: StateFlow<Boolean> = _loginSuccess
     private val _autoLogin = MutableStateFlow(false)
     val autoLogin: StateFlow<Boolean> = _autoLogin
+    private val _uriList = MutableStateFlow< MutableList<Uri>>( mutableListOf())
+    val uriList: StateFlow<List<Uri>> = _uriList
+    private val _checkImageList = MutableStateFlow< MutableList<Uri>>( mutableListOf())
+    val checkImageList: StateFlow<List<Uri>> = _checkImageList
+    private val _currentIndex = MutableStateFlow(0)
+    val currentIndex: StateFlow<Int> = _currentIndex
 
     fun setAccount(value: String) {
         _account.value = value
@@ -43,6 +53,11 @@ class ViewModel {
     }
     fun setPassword(value: String) {
         _password.value = value
+    }
+    fun setUriList(value: List<Uri>) {
+        value.forEach{
+            if(_uriList.value.contains(it) == false){ _uriList.value = (_uriList.value + it).toMutableList() }
+        }
     }
     fun setAutoLogin(value: Boolean) {
         _autoLogin.value = value
@@ -102,13 +117,6 @@ class ViewModel {
     }
 
     fun login(context: Context) {
-        val isAutoLogin = MutableStateFlow(false)
-        CoroutineScope(Dispatchers.IO).launch {
-            isAutoLogin.value = DataStorePreference.getAutoLogin(context).first()
-        }
-        if (isAutoLogin.value){
-            autoLogin(context)
-        }
         if (account.value.isBlank()) {
             _errorMessage.value = "账号不能为空"
             return
@@ -131,7 +139,9 @@ class ViewModel {
                     val body = response.body()
                     if (body != null && body.code == 200) {
                         _loginSuccess.value = true
-                        CoroutineScope(Dispatchers.IO).launch{ saveUserInfo(body.data?.token ?: "", context, _autoLogin.value) }
+                        if(body.data != null && body.data.user != null)CoroutineScope(Dispatchers.IO).launch{ saveUserInfo(body.data.token ?: "", context, _autoLogin.value, data = body.data.user) }
+                        else {
+                            Toast.makeText(context, "用户信息读取失败", Toast.LENGTH_SHORT).show()}
                     } else {
                         _errorMessage.value = body?.message ?: "登录失败"
                     }
@@ -147,34 +157,58 @@ class ViewModel {
         })
     }
     fun autoLogin(context: Context) {
-        _isLoading.value = true
         CoroutineScope(Dispatchers.IO).launch {
-            val token = DataStorePreference.getToken(context).first()
-            val call = ApiClient.apiService.autologin(AutoLoginRequest(_account.value, token))
-            call.enqueue(object : Callback<ApiResponse<CallBackData>> {
-                override fun onResponse(
-                    call: Call<ApiResponse<CallBackData>>,
-                    response: Response<ApiResponse<CallBackData>>
-                ) {
-                    _isLoading.value = false
-                    if (response.isSuccessful) {
+            val savedAutoLogin = DataStorePreference.getAutoLogin(context).first()
+            if(savedAutoLogin) {
+                _isLoading.value = true
+                val account = DataStorePreference.getAccount(context).first()
+                val password = DataStorePreference.getPassword(context).first()
+                setAccount(account)
+                setPassword(password)
+                setAutoLogin(true)
+                val token = DataStorePreference.getToken(context).first()
+                val call = ApiClient.apiService.autologin(AutoLoginRequest(account, token))
+                call.enqueue(object : Callback<ApiResponse<CallBackData>> {
+                    override fun onResponse(
+                        call: Call<ApiResponse<CallBackData>>,
+                        response: Response<ApiResponse<CallBackData>>
+                    ) {
+                        _isLoading.value = false
+                        if (response.isSuccessful) {
 
-                        val body = response.body()
-                        if (body != null && body.code == 200) {
-                            _loginSuccess.value = true
+                            val body = response.body()
+                            if (body != null && body.code == 200) {
+                                _loginSuccess.value = true
+                            } else {
+                                _errorMessage.value = body?.message ?: "登录失败"
+                            }
                         } else {
-                            _errorMessage.value = body?.message ?: "登录失败"
+                            _errorMessage.value = "登录失败，服务器错误(${response.code()})"
                         }
-                    } else {
-                        _errorMessage.value = "登录失败，服务器错误(${response.code()})"
                     }
-                }
-                override fun onFailure(call: Call<ApiResponse<CallBackData>>, t: Throwable) {
-                    _isLoading.value = false
-                    _errorMessage.value = "网络错误：${t.message}"
-                }
-            })
+
+                    override fun onFailure(call: Call<ApiResponse<CallBackData>>, t: Throwable) {
+                        _isLoading.value = false
+                        _errorMessage.value = "网络错误：${t.message}"
+                    }
+                })
+            }
         }
+    }
+
+
+    fun quitLogin(context: Context){
+        CoroutineScope(Dispatchers.IO).launch {
+            DataStorePreference.clearData(context)
+         }
+    }
+    fun dissaved(){
+        _uriList.value = mutableListOf()
+    }
+
+    fun checkImage(uriList: List<Uri>,index:Int){
+        _checkImageList.value = uriList.toMutableList()
+        _currentIndex.value = index
     }
 
 }

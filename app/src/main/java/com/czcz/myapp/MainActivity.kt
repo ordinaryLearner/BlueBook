@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -26,6 +27,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Main() {
     val navController = rememberNavController()
+    val viewModel: ViewModel = viewModel()
     NavHost(navController = navController, startDestination = "LoginScreen"){
         composable("LoginScreen"){
             LoginScreen(navController)
@@ -41,6 +43,12 @@ fun Main() {
         }
         composable("HomeScreen"){
             HomeScreen(navController)
+        }
+        composable("PublishScreen"){
+            PublishScreen(navController,viewModel)
+        }
+        composable("ImageViewScreen"){
+            ImageViewScreen(navController,viewModel)
         }
     }
 }

@@ -32,12 +32,13 @@ data class CallBackData(
 )
 
 data class UserInfo(
-    val id: String?,
-    val account: String?,
+    val id: String,
+    val account: String,
     val username: String?,
+    val password: String,
    val avatar: String?,
     val bio: String?,
-    @SerializedName("join_time") val joinTime: String?
+    @SerializedName("join_time") val joinTime: String
 )
 
 data class HealthResponse(

@@ -2,14 +2,17 @@ package com.czcz.myapp
 
 import androidx.compose.ui.graphics.vector.ImageVector
 
-class Models {
+
+
     data class User(
+        val id: String,
         val username: String?=null,
         val account: String,
         val password: String,
+        val avatar: String,
         val joinTime: String,
-        val followers:Int,
-        val likes:Int,
+        val followers:Int?=0,
+        val likes:Int?=0,
         //val posts: MutableList<Post>?= mutableListOf(),
         //val likedPost: MutableList<Post>?= mutableListOf()
     )
@@ -40,4 +43,3 @@ class Models {
         IMAGE,
         VIDEO
     }
-}

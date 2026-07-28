@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.czcz.myapp.Models.*
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +34,7 @@ fun FlashScreen(navController: NavController) {
     var searchQuery by remember { mutableStateOf("") }
 
     val feedItems = remember {
-        val mockUser = User(username = "小明", account = "xiaoming", password = "", joinTime = "2024-01-01", followers = 1200, likes = 3600)
+        val mockUser = User(id = "1", username = "小明", account = "xiaoming", password = "", avatar = "https://picsum.photos/100/100", joinTime = "2024-01-01", followers = 1200, likes = 3600)
         listOf(
             Post("1", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), mockUser, 128),
             Post("2", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), mockUser, 256),

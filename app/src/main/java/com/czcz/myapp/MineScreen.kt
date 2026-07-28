@@ -1,5 +1,7 @@
 package com.czcz.myapp
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,47 +21,46 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
-import com.czcz.myapp.Models.*
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MineScreen(navController: NavController) {
+    val viewmodel : ViewModel = viewModel()
+    val content = LocalContext.current
     val skyBlue = Color(0xFF87CEEB)
     val skyBlueDark = Color(0xFF5BB0D9)
+    val ifQuit = remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val userInfo = DataStorePreference.getUser(content).collectAsState(initial = UserInfo(id = "", account = "", username = "BB用户", avatar = "https://picsum.photos/200/200", bio = "", joinTime = "", password = ""))
 
-    val dummyUser = User(
-        username = "我",
-        account = "me",
-        password = "",
-        joinTime = "2024-01-01",
-        followers = 0,
-        likes = 0
-    )
+    val user = User(id = userInfo.value.id, account = userInfo.value.account, username = userInfo.value.username, avatar = userInfo.value.avatar?:"https://picsum.photos/200/200", password = userInfo.value.password, joinTime = userInfo.value.joinTime)
 
     val myPosts = remember {
         listOf(
-            Post("p1", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), dummyUser, 128),
-            Post("p2", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), dummyUser, 256),
-            Post("p3", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), dummyUser, 89),
-            Post("p4", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), dummyUser, 342),
-            Post("p5", Media(MediaType.IMAGE, "https://picsum.photos/400/550"), dummyUser, 67),
-            Post("p6", Media(MediaType.IMAGE, "https://picsum.photos/400/650"), dummyUser, 512),
+            Post("p1", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), user, 128),
+            Post("p2", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), user, 256),
+            Post("p3", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), user, 89),
+            Post("p4", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), user, 342),
+            Post("p5", Media(MediaType.IMAGE, "https://picsum.photos/400/550"), user, 67),
+            Post("p6", Media(MediaType.IMAGE, "https://picsum.photos/400/650"), user, 512),
         )
     }
 
     val likedPosts = remember {
         listOf(
-            Post("l1", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), dummyUser, 980),
-            Post("l2", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), dummyUser, 1200),
-            Post("l3", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), dummyUser, 45),
-            Post("l4", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), dummyUser, 760),
+            Post("l1", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), user, 980),
+            Post("l2", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), user, 1200),
+            Post("l3", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), user, 45),
+            Post("l4", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), user, 760),
         )
     }
 
@@ -78,7 +79,7 @@ fun MineScreen(navController: NavController) {
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        ProfileHeader(skyBlue, skyBlueDark, navController)
+        ProfileHeader(skyBlue, skyBlueDark, navController,user, viewmodel, content, ifQuit)
 
         TabRow(
             selectedTabIndex = selectedTab,
@@ -122,7 +123,7 @@ fun MineScreen(navController: NavController) {
 }
 
 @Composable
-private fun ProfileHeader(skyBlue: Color, skyBlueDark: Color, navController: NavController) {
+private fun ProfileHeader(skyBlue: Color, skyBlueDark: Color, navController: NavController,user :User, viewmodel: ViewModel, content: Context, ifQuit: MutableState<Boolean>) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -143,13 +144,50 @@ private fun ProfileHeader(skyBlue: Color, skyBlueDark: Color, navController: Nav
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center
             )
-            IconButton(onClick = { navController.popBackStack() }) {
+            IconButton(onClick = { ifQuit.value = true }) {
                 Icon(
-                    imageVector = Icons.Filled.Settings,
-                    contentDescription = "设置",
-                    tint = Color.White
+                    imageVector = Icons.Filled.PowerSettingsNew,
+                    contentDescription = "退出登录",
+                    tint = Color.Red
                 )
             }
+        }
+
+        if (ifQuit.value) {
+            AlertDialog(
+                onDismissRequest = { ifQuit.value = false },
+                title = { Text("退出登录") },
+                text = { Text("确定要退出登录吗？") },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            ifQuit.value = false
+                            viewmodel.quitLogin(content)
+                            Toast.makeText(content, "退出成功", Toast.LENGTH_SHORT).show()
+                            navController.navigate("LoginScreen") {
+                                popUpTo("LoginScreen") { inclusive = true }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF4CAF50),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("确认")
+                    }
+                },
+                dismissButton = {
+                    Button(
+                        onClick = { ifQuit.value = false },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.Red,
+                            contentColor = Color.Black
+                        )
+                    ) {
+                        Text("取消")
+                    }
+                }
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -161,7 +199,7 @@ private fun ProfileHeader(skyBlue: Color, skyBlueDark: Color, navController: Nav
             verticalAlignment = Alignment.CenterVertically
         ) {
             AsyncImage(
-                model = "https://picsum.photos/200/200",
+                model = user.avatar,
                 contentDescription = "头像",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -174,7 +212,7 @@ private fun ProfileHeader(skyBlue: Color, skyBlueDark: Color, navController: Nav
 
             Column {
                 Text(
-                    text = "用户昵称",
+                    text = user.username?:"BB用户",
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -210,7 +248,9 @@ private fun ProfileHeader(skyBlue: Color, skyBlueDark: Color, navController: Nav
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+
 }
+
 
 @Composable
 private fun StatItem(count: String, label: String) {
