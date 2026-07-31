@@ -26,6 +26,14 @@ data class AutoLoginRequest(
     val token:String
 )
 
+data class PublishRequest(
+    val senderId: String,
+    val title: String,
+    val content: String,
+    val images: List<String>? = null,
+    //val comment: List<String>? = null,
+)
+
 data class CallBackData(
     val user: UserInfo?,
     val token: String?
@@ -44,4 +52,16 @@ data class UserInfo(
 data class HealthResponse(
     val status: String?,
     val timestamp: String?
+)
+
+data class ImgBBResponse(
+    val data: ImgBBData?,
+    val success: Boolean,
+    val status: Int
+)
+
+data class ImgBBData(
+    val url: String?,
+    @SerializedName("display_url") val displayUrl: String?,
+    @SerializedName("delete_url") val deleteUrl: String?
 )

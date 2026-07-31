@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -33,40 +34,26 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MineScreen(navController: NavController) {
-    val viewmodel : ViewModel = viewModel()
-    val content = LocalContext.current
+fun MineScreen(navController: NavController,viewmodel : ViewModel) {
+    val context = LocalContext.current
     val skyBlue = Color(0xFF87CEEB)
     val skyBlueDark = Color(0xFF5BB0D9)
     val ifQuit = remember { mutableStateOf(false) }
+    val myPosts = viewmodel.myPostList.collectAsState(initial = emptyList())
+    val likedPosts = viewmodel.likedPostList.collectAsState(initial = emptyList())
     val coroutineScope = rememberCoroutineScope()
-    val userInfo = DataStorePreference.getUser(content).collectAsState(initial = UserInfo(id = "", account = "", username = "BB用户", avatar = "https://picsum.photos/200/200", bio = "", joinTime = "", password = ""))
+    val userInfo = DataStorePreference.getUser(context).collectAsState(initial = UserInfo(id = "", account = "", username = "BB用户", avatar = "https://picsum.photos/200/200", bio = "", joinTime = "", password = ""))
 
     val user = User(id = userInfo.value.id, account = userInfo.value.account, username = userInfo.value.username, avatar = userInfo.value.avatar?:"https://picsum.photos/200/200", password = userInfo.value.password, joinTime = userInfo.value.joinTime)
 
-    val myPosts = remember {
-        listOf(
-            Post("p1", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), user, 128),
-            Post("p2", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), user, 256),
-            Post("p3", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), user, 89),
-            Post("p4", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), user, 342),
-            Post("p5", Media(MediaType.IMAGE, "https://picsum.photos/400/550"), user, 67),
-            Post("p6", Media(MediaType.IMAGE, "https://picsum.photos/400/650"), user, 512),
-        )
-    }
-
-    val likedPosts = remember {
-        listOf(
-            Post("l1", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), user, 980),
-            Post("l2", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), user, 1200),
-            Post("l3", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), user, 45),
-            Post("l4", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), user, 760),
-        )
-    }
 
     val pagerState = rememberPagerState(pageCount = { 2 })
     var selectedTab by remember { mutableIntStateOf(0) }
 
+
+    LaunchedEffect(null) {
+        viewmodel.getMyPosts(context)
+    }
     LaunchedEffect(selectedTab) {
         pagerState.animateScrollToPage(selectedTab)
     }
@@ -79,7 +66,7 @@ fun MineScreen(navController: NavController) {
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        ProfileHeader(skyBlue, skyBlueDark, navController,user, viewmodel, content, ifQuit)
+        ProfileHeader(skyBlue, skyBlueDark, navController,user, viewmodel, context, ifQuit)
 
         TabRow(
             selectedTabIndex = selectedTab,
@@ -117,7 +104,7 @@ fun MineScreen(navController: NavController) {
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val items = if (page == 0) myPosts else likedPosts
-            PostGrid(items)
+            PostGrid(items.value,navController,viewmodel)
         }
     }
 }
@@ -273,23 +260,69 @@ private fun StatItem(count: String, label: String) {
 }
 
 @Composable
-private fun PostGrid(items: List<Post>) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
-        contentPadding = PaddingValues(2.dp),
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.fillMaxSize()
-    ) {
-        items(items, key = { it.id }) { item ->
-            AsyncImage(
-                model = item.media.url,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.75f)
-                    .clip(RoundedCornerShape(2.dp))
+private fun PostGrid(items: List<Post>, navController: NavController,viewModel: ViewModel) {
+    if(items.isNotEmpty()){
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(3),
+            contentPadding = PaddingValues(2.dp),
+            horizontalArrangement = Arrangement.spacedBy(2.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(items, key = { it.id }) { item ->
+                Box(modifier = Modifier.clickable(onClick = {
+                    navController.navigate("DetailScreen")
+                    viewModel.setCurrentPost(item)
+                })){
+                    AsyncImage(
+                        model = item.medias.firstOrNull()?.url ?: R.drawable.ic_image_placeholder,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(0.75f)
+                            .clip(RoundedCornerShape(2.dp))
+                    )
+                    Column(){
+                        Spacer(modifier = Modifier.weight(1f))
+                        Row(
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Spacer(modifier = Modifier.weight(1f))
+                            Icon(
+                                imageVector = Icons.Filled.FavoriteBorder,
+                                contentDescription = "点赞",
+                                tint = Color(0xFFFFFFFF),
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .clickable {
+
+                                    }
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (item.likes.size  >= 10000) {
+                                    String.format("%.1fw", item.likes.size / 10000.0)
+                                } else {
+                                    item.likes.toString()
+                                },
+                                fontSize = 12.sp,
+                                color = Color(0xFFFFFFFF)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center){
+            Text(
+                text = "暂无数据",
+                fontSize = 16.sp,
+                color = Color.Black,
+                modifier = Modifier.padding(16.dp)
             )
         }
     }

@@ -38,8 +38,7 @@ fun ImageViewScreen(navController: NavController,viewModel: ViewModel) {
 
     Box(){
         HorizontalPager(state = PagerState,modifier = Modifier.fillMaxSize()){
-                page ->
-
+            page ->
             AsyncImage(
                 model = checkImageList.value[page],
                 contentDescription = "图片",
@@ -56,12 +55,10 @@ fun ImageViewScreen(navController: NavController,viewModel: ViewModel) {
             ) {
                 Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "选择图片或视频",
+                    contentDescription = "返回",
                     modifier = Modifier.size(25.dp)
                 )
             }
         }
-
-
     }
 }

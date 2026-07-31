@@ -32,16 +32,39 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PublishScreen(navController: NavController,viewModel: ViewModel) {
     val skyBlue = Color(0xFF87CEEB)
     val skyBlueDark = Color(0xFF5BB0D9)
-    var title by remember { mutableStateOf("") }
-    var content by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val title = viewModel.titleEdit.collectAsState()
+    val content = viewModel.contentEdit.collectAsState()
     var ifSaved by remember { mutableStateOf(false) }
     val uriList = viewModel.uriList.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val ifPost by viewModel.ifPost.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.resetPublishState()
+    }
+    LaunchedEffect(ifPost) {
+        if (ifPost) {
+            Toast.makeText(context, "发布成功", Toast.LENGTH_SHORT).show()
+            viewModel.dissaved()
+            navController.popBackStack()
+        }
+    }
+    LaunchedEffect(errorMessage) {
+        if (errorMessage.isNotEmpty()) {
+            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            viewModel.resetPublishState()
+        }
+    }
+
     val pickMultipleMedia = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(8),
         onResult = {
@@ -65,7 +88,7 @@ fun PublishScreen(navController: NavController,viewModel: ViewModel) {
             },
             navigationIcon = {
                 IconButton(onClick = {
-                    if(viewModel.uriList.value.isNotEmpty() || title.isNotEmpty() || content.isNotEmpty()){ ifSaved = true }
+                    if(viewModel.uriList.value.isNotEmpty() || title.value.isNotEmpty() || content.value.isNotEmpty()){ ifSaved = true }
                     else navController.popBackStack()
                 }) {
                     Icon(
@@ -88,7 +111,6 @@ fun PublishScreen(navController: NavController,viewModel: ViewModel) {
                     Button(
                         onClick = {
                             ifSaved = false
-                            viewModel.dissaved()
                             navController.popBackStack()
                         },
                         colors = ButtonDefaults.buttonColors(
@@ -101,7 +123,11 @@ fun PublishScreen(navController: NavController,viewModel: ViewModel) {
                 },
                 dismissButton = {
                     Button(
-                        onClick = { ifSaved = false },
+                        onClick = {
+                            ifSaved = false
+                            viewModel.dissaved()
+                            navController.popBackStack()
+                                  },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Red,
                             contentColor = Color.Black
@@ -181,8 +207,8 @@ fun PublishScreen(navController: NavController,viewModel: ViewModel) {
             Spacer(modifier = Modifier.height(20.dp))
 
             OutlinedTextField(
-                value = title,
-                onValueChange = { title = it },
+                value = title.value,
+                onValueChange = { viewModel.setTitleEdit( it) },
                 placeholder = {
                     Text(
                         text = "请输入标题",
@@ -208,8 +234,8 @@ fun PublishScreen(navController: NavController,viewModel: ViewModel) {
             Spacer(modifier = Modifier.height(12.dp))
 
             OutlinedTextField(
-                value = content,
-                onValueChange = { content = it },
+                value = content.value,
+                onValueChange = { viewModel.setContentEdit(it) },
                 placeholder = {
                     Text(
                         text = "分享你的故事...",
@@ -258,7 +284,9 @@ fun PublishScreen(navController: NavController,viewModel: ViewModel) {
             }
 
             Button(
-                onClick = { },
+                onClick = {
+                    viewModel.post(context)
+                },
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp),
@@ -268,11 +296,30 @@ fun PublishScreen(navController: NavController,viewModel: ViewModel) {
                     contentColor = Color.White
                 )
             ) {
-                Text(
-                    text = "确认",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                if (isLoading) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = skyBlueDark,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "发布中...",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "确认",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }

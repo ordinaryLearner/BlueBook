@@ -11,12 +11,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -27,26 +29,15 @@ import coil.compose.AsyncImage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FlashScreen(navController: NavController) {
+fun FlashScreen(navController: NavController, viewModel: ViewModel) {
     val skyBlue = Color(0xFF87CEEB)
     val skyBlueDark = Color(0xFF5BB0D9)
-    var selectedTab by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
     var searchQuery by remember { mutableStateOf("") }
-
-    val feedItems = remember {
-        val mockUser = User(id = "1", username = "小明", account = "xiaoming", password = "", avatar = "https://picsum.photos/100/100", joinTime = "2024-01-01", followers = 1200, likes = 3600)
-        listOf(
-            Post("1", Media(MediaType.IMAGE, "https://picsum.photos/400/600"), mockUser, 128),
-            Post("2", Media(MediaType.IMAGE, "https://picsum.photos/400/500"), mockUser, 256),
-            Post("3", Media(MediaType.IMAGE, "https://picsum.photos/400/700"), mockUser, 89),
-            Post("4", Media(MediaType.IMAGE, "https://picsum.photos/400/450"), mockUser, 342),
-            Post("5", Media(MediaType.IMAGE, "https://picsum.photos/400/550"), mockUser, 67),
-            Post("6", Media(MediaType.IMAGE, "https://picsum.photos/400/650"), mockUser, 512),
-            Post("7", Media(MediaType.IMAGE, "https://picsum.photos/400/480"), mockUser, 198),
-            Post("8", Media(MediaType.IMAGE, "https://picsum.photos/400/620"), mockUser, 76),
-            Post("9", Media(MediaType.IMAGE, "https://picsum.photos/400/530"), mockUser, 421),
-            Post("10", Media(MediaType.IMAGE, "https://picsum.photos/400/580"), mockUser, 153),
-        )
+    val feedItems by viewModel.postList.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    LaunchedEffect(null) {
+        viewModel.updatePost()
     }
 
     Scaffold(
@@ -98,42 +89,65 @@ fun FlashScreen(navController: NavController) {
             }
         }
     ) { paddingValues ->
-        LazyVerticalStaggeredGrid(
-            columns = StaggeredGridCells.Fixed(2),
-            contentPadding = PaddingValues(
-                top = paddingValues.calculateTopPadding() + 8.dp,
-                bottom = paddingValues.calculateBottomPadding() + 8.dp,
-                start = 8.dp,
-                end = 8.dp
-            ),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalItemSpacing = 8.dp,
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.updatePost() },
             modifier = Modifier.fillMaxSize()
         ) {
-            items(feedItems, key = { it.id }) { item ->
-                PostCard(item, navController)
+            Box(modifier = Modifier.padding(paddingValues)){
+                if(feedItems.isEmpty()){
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center){
+                        Text(
+                            text = "暂无数据",
+                            fontSize = 16.sp,
+                            color = Color.Black,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+                else{
+                    LazyVerticalStaggeredGrid(
+                        columns = StaggeredGridCells.Fixed(2),
+                        contentPadding = PaddingValues(
+                            top = 8.dp,
+                            bottom = 8.dp,
+                            start = 8.dp,
+                            end = 8.dp
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalItemSpacing = 8.dp,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(feedItems) { item ->
+                            PostCard(item, navController, viewModel)
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun PostCard(item: Post, navController: NavController) {
+fun PostCard(item: Post, navController: NavController, viewModel: ViewModel) {
     val skyBlueDark = Color(0xFF5BB0D9)
     var isLiked by remember { mutableStateOf(false) }
-    var likeCount by remember { mutableIntStateOf(item.likes) }
+    var likeCount by remember { mutableIntStateOf(item.likes.size) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { navController.navigate("PostDetailScreen/${item.id}") },
+            .clickable {
+                navController.navigate("DetailScreen")
+                viewModel.setCurrentPost(item)
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
             AsyncImage(
-                model = item.media.url,
+                model = item.medias.firstOrNull()?.url ?: R.drawable.ic_image_placeholder,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
@@ -153,53 +167,60 @@ fun PostCard(item: Post, navController: NavController) {
             Column(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)
             ) {
+                Text(
+                    text = item.title,
+                    fontSize = 14.sp,
+                    color = Color(0xFF333333),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    AsyncImage(
-                        model = "https://picsum.photos/100/100",
-                        contentDescription = "头像",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(22.dp)
-                            .clip(CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = item.sender.username ?: item.sender.account,
-                        fontSize = 12.sp,
-                        color = Color(0xFF666666),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = "点赞",
-                        tint = if (isLiked) Color(0xFFFF4D6A) else Color(0xFF999999),
-                        modifier = Modifier
-                            .size(18.dp)
-                            .clickable {
-                                isLiked = !isLiked
-                                likeCount = if (isLiked) likeCount + 1 else likeCount - 1
-                            }
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = if (likeCount >= 10000) {
-                            String.format("%.1fw", likeCount / 10000.0)
-                        } else {
-                            likeCount.toString()
-                        },
-                        fontSize = 12.sp,
-                        color = Color(0xFF999999)
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically,){
+                        AsyncImage(
+                            model = "https://picsum.photos/100/100",
+                            contentDescription = "头像",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(CircleShape)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = item.sender.username ?: item.sender.account,
+                            fontSize = 12.sp,
+                            color = Color(0xFF666666),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically){
+                        Icon(
+                            imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                            contentDescription = "点赞",
+                            tint = if (isLiked) Color(0xFFFF4D6A) else Color(0xFF999999),
+                            modifier = Modifier
+                                .size(18.dp)
+                                .clickable {
+                                    isLiked = !isLiked
+                                    likeCount = if (isLiked) likeCount + 1 else likeCount
+                                }
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = if (likeCount >= 10000) {
+                                String.format("%.1fw", likeCount / 10000.0)
+                            } else {
+                                likeCount.toString()
+                            },
+                            fontSize = 12.sp,
+                            color = Color(0xFF999999)
+                        )
+                    }
                 }
             }
         }

@@ -36,19 +36,22 @@ fun Main() {
             RegistrationScreen(navController)
         }
         composable("FlashScreen"){
-            FlashScreen(navController)
+            FlashScreen(navController,viewModel)
         }
         composable("MineScreen"){
-            MineScreen(navController)
+            MineScreen(navController,viewModel)
         }
         composable("HomeScreen"){
-            HomeScreen(navController)
+            HomeScreen(navController,viewModel)
         }
         composable("PublishScreen"){
             PublishScreen(navController,viewModel)
         }
         composable("ImageViewScreen"){
             ImageViewScreen(navController,viewModel)
+        }
+        composable("DetailScreen"){
+            DetailScreen(navController,viewModel)
         }
     }
 }

@@ -20,7 +20,7 @@ import androidx.navigation.NavController
 
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController, viewModel: ViewModel) {
     val skyBlue = Color(0xFF87CEEB)
     val skyBlueDark = Color(0xFF5BB0D9)
 
@@ -114,23 +114,23 @@ fun HomeScreen(navController: NavController) {
                 .padding(paddingValues),
         ) { page ->
             when (page) {
-                0 -> FlashPage(navController)
+                0 -> FlashPage(navController, viewModel)
                 1 -> DiscoverPage()
                 2 -> MessagePage()
-                3 -> MineScreen(navController)
+                3 -> MineScreen(navController, viewModel)
             }
         }
     }
 }
 
 @Composable
-fun FlashPage(navController: NavController) {
+fun FlashPage(navController: NavController, viewModel: ViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        FlashScreen(navController = navController)
+        FlashScreen(navController, viewModel)
     }
 }
 
