@@ -1,0 +1,18 @@
+<!-- res/layout/exo_player_control_view.xml -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 只保留进度条，ID 必须是 exo_progress -->
+    <androidx.media3.ui.DefaultTimeBar
+        android:id="@id/exo_progress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="16dp"
+        app:bar_height="2dp"
+        app:played_color="#FF4081"
+        app:unplayed_color="#80FFFFFF" />
+
+</FrameLayout>

@@ -1,37 +1,39 @@
-package com.czcz.myapp
+package com.czcz.myapp.Screen
 
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
+import com.czcz.myapp.Api.InfoViewModel
+import com.czcz.myapp.Api.LoginViewModel
+import com.czcz.myapp.Api.PostViewModel
+import com.czcz.myapp.ui.theme.skyBlue
+import com.czcz.myapp.ui.theme.skyBlueDark
+import com.czcz.myapp.R
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun RegistrationScreen(navController: NavController) {
-    val skyBlue = Color(0xFF87CEEB)
-    val skyBlueDark = Color(0xFF5BB0D9)
-    val viewModel = remember { ViewModel() }
+fun LoginScreen(navController: NavController, postViewModel: PostViewModel, infoViewModel: InfoViewModel, loginViewModel: LoginViewModel) {
     val context = LocalContext.current
-
-    val account by viewModel.account.collectAsState(initial = "")
-    val password by viewModel.password.collectAsState(initial = "")
-    val confirmPassword by viewModel.confirmPassword.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val errorMessage by viewModel.errorMessage.collectAsState()
-    val registerSuccess by viewModel.registerSuccess.collectAsState()
+    val account by loginViewModel.account.collectAsState()
+    val password by loginViewModel.password.collectAsState()
+    val isLoading by loginViewModel.isLoading.collectAsState()
+    val errorMessage by loginViewModel.errorMessage.collectAsState()
+    val loginSuccess by loginViewModel.loginSuccess.collectAsState()
+    val autoLogin by loginViewModel.autoLogin.collectAsState()
 
     LaunchedEffect(errorMessage) {
         if (errorMessage.isNotEmpty()) {
@@ -39,44 +41,33 @@ fun RegistrationScreen(navController: NavController) {
         }
     }
 
-    LaunchedEffect(registerSuccess) {
-        if (registerSuccess) {
-            Toast.makeText(context, "注册成功", Toast.LENGTH_SHORT).show()
-            navController.popBackStack()
+    LaunchedEffect(loginSuccess) {
+        if (loginSuccess) {
+            Toast.makeText(context, "登录成功", Toast.LENGTH_SHORT).show()
+            postViewModel.updatePost(context)
+            postViewModel.getVideoPost(context)
+            navController.navigate("HomeScreen")
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = "注册", color = Color.White) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "返回",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = skyBlue
-                )
-            )
-        }
-    ) { paddingValues ->
+    Box(modifier = Modifier.fillMaxSize()){
+        AsyncImage(
+            model = R.drawable.background,
+            contentDescription = "Background Image",
+            modifier = Modifier.fillMaxSize(),
+            alignment = Alignment.Center,
+            contentScale = ContentScale.Crop
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(skyBlue)
-                .padding(paddingValues)
                 .padding(horizontal = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(120.dp))
 
             Text(
-                text = "创建账号",
+                text = "欢迎登录",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -86,7 +77,7 @@ fun RegistrationScreen(navController: NavController) {
 
             OutlinedTextField(
                 value = account,
-                onValueChange = { viewModel.setAccount(it) },
+                onValueChange = { loginViewModel.setAccount(it) },
                 label = { Text("账户") },
                 singleLine = true,
                 enabled = !isLoading,
@@ -107,7 +98,7 @@ fun RegistrationScreen(navController: NavController) {
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { viewModel.setPassword(it) },
+                onValueChange = { loginViewModel.setPassword(it) },
                 label = { Text("密码") },
                 singleLine = true,
                 enabled = !isLoading,
@@ -125,32 +116,32 @@ fun RegistrationScreen(navController: NavController) {
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { viewModel.setConfirmPassword(it) },
-                label = { Text("确认密码") },
-                singleLine = true,
-                enabled = !isLoading,
-                visualTransformation = PasswordVisualTransformation(),
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.6f),
-                    focusedLabelColor = Color.White,
-                    unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
-                    cursorColor = Color.White,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = autoLogin,
+                    onCheckedChange = { loginViewModel.setAutoLogin(!autoLogin) },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = Color.White,
+                        uncheckedColor = Color.White.copy(alpha = 0.7f),
+                        checkmarkColor = skyBlue
+                    )
                 )
-            )
+                Text(
+                    text = "自动登录",
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
+            }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { viewModel.register() },
+                onClick = { loginViewModel.login(context) },
                 enabled = !isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -175,18 +166,28 @@ fun RegistrationScreen(navController: NavController) {
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "注册中...",
+                            text = "登录中...",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 } else {
                     Text(
-                        text = "确认注册",
+                        text = "登录",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                 }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            TextButton(onClick = { navController.navigate("RegisterScreen") }) {
+                Text(
+                    text = "没有账号？去注册",
+                    color = Color.White,
+                    fontSize = 14.sp
+                )
             }
         }
     }

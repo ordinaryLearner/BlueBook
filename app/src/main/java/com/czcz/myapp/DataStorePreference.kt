@@ -1,10 +1,14 @@
 package com.czcz.myapp
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.byteArrayPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.czcz.myapp.Api.Models.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -17,27 +21,32 @@ object DataStorePreference{
     private val KEY_USERNAME = stringPreferencesKey("username")
     private val KEY_PASSWORD = stringPreferencesKey("password")
     private val KEY_JOIN_TIME = stringPreferencesKey("join_time")
+    private val KEY_LIKES = intPreferencesKey("likes")
 
     private val KEY_AVATAR = stringPreferencesKey("avatar")
     private val KEY_BIO = stringPreferencesKey("bio")
+    private val KEY_BACKGROUND = stringPreferencesKey("background")
     private val KEY_AUTOLOGIN = booleanPreferencesKey("autologin")
 
-    private const val DEFAULT_AVATAR = "https://picsum.photos/200/200"
+
+
+
     private const val DEFAULT_USERNAME = "BB用户"
 
 
-    //这里的edit时suspend函数，需要在协程中调用
-    suspend fun saveUserInfo(token: String,context: Context, autoLogin: Boolean, data: UserInfo) {
+
+    suspend fun saveUserInfo(token: String,context: Context, autoLogin: Boolean, data: User) {
             context.dataStore.edit { preferences ->
                 preferences[TOKEN] = token
                 preferences[USER_ID] = data.id
                 preferences[KEY_ACCOUNT] = data.account
                 preferences[KEY_USERNAME] = data.username ?: DEFAULT_USERNAME
-                preferences[KEY_PASSWORD] = data.password
-                preferences[KEY_AVATAR] = data.avatar ?: DEFAULT_AVATAR
+                preferences[KEY_BACKGROUND] = data.background ?: ""
+                preferences[KEY_AVATAR] = data.avatar ?: ""
                 preferences[KEY_BIO] = data.bio ?: ""
                 preferences[KEY_JOIN_TIME] = data.joinTime
                 preferences[KEY_AUTOLOGIN] = autoLogin
+                preferences[KEY_LIKES] = data.likes
             }
     }
     suspend fun clearData(context: Context) {
@@ -65,16 +74,18 @@ object DataStorePreference{
             preferences[TOKEN] ?: ""
         }
     }
-    fun getUser(context: Context): Flow<UserInfo> {
+    fun getUser(context: Context): Flow<User> {
         return context.dataStore.data.map { preferences ->
-            UserInfo(
+            Log.d("DataStorePreference", "getUser: ${preferences[KEY_LIKES]}")
+            User(
                 id = preferences[USER_ID] ?: "",
                 account = preferences[KEY_ACCOUNT] ?: "",
                 username = preferences[KEY_USERNAME] ?: DEFAULT_USERNAME,
-                avatar = preferences[KEY_AVATAR] ?: DEFAULT_AVATAR,
+                avatar = preferences[KEY_AVATAR] ?: "",
+                background = preferences[KEY_BACKGROUND] ?: "",
                 bio = preferences[KEY_BIO] ?: "Your bio",
                 joinTime = preferences[KEY_JOIN_TIME] ?: "",
-                password = preferences[KEY_PASSWORD] ?: ""
+                likes = preferences[KEY_LIKES] ?: 0
             )
         }
     }
