@@ -403,7 +403,7 @@ fun FindScreen(
                             Icon(
                                 imageVector = Icons.Filled.Add,
                                 contentDescription = "关注",
-                                tint = animateLikeColor,
+                                tint = animatedFollowColor,
                             )
                         }
                     }
@@ -415,7 +415,9 @@ fun FindScreen(
                         modifier = Modifier
                             .size(30.dp)
                             .clickable {
-
+                                isLiked = !isLiked
+                                likeCount = if (isLiked) likeCount + 1 else likeCount - 1
+                                postViewModel.like(context, isLiked)
                             }
                     )
                     Text(
@@ -431,7 +433,7 @@ fun FindScreen(
                     Icon(
                         imageVector = Icons.Filled.ModeComment,
                         contentDescription = "评论",
-                        tint = animateLikeColor,
+                        tint = Color.White,
                         modifier = Modifier
                             .size(30.dp)
                             .clickable {
@@ -455,7 +457,8 @@ fun FindScreen(
                         modifier = Modifier
                             .size(30.dp)
                             .clickable {
-
+                                ifStarred = !ifStarred
+                                postViewModel.star(context, ifStarred)
                             }
                     )
                 }
